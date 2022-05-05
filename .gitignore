@@ -1,2 +1,9 @@
 .idea
 venv
+venv2
+dist
+keys
+__pycache__
+*.pyc
+*.egg-info
+*.env
