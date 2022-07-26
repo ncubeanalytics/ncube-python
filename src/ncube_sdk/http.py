@@ -84,6 +84,9 @@ class HTTPAdapterWithTimeout(requests.adapters.HTTPAdapter):
         )
 
 
+RETRY_ALLOWED_METHODS = frozenset(["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"])
+
+
 def create_session(
     num_workers=1,
     num_hosts=1,
@@ -91,7 +94,7 @@ def create_session(
     backoff_factor=0.2,
     timeout=5 * 60,
     retry_status_codes=(413, 429, 500, 502, 503, 504),
-    retry_allowed_methods=Retry.DEFAULT_ALLOWED_METHODS,  # pass a falsy value to retry on all methods
+    retry_allowed_methods=Retry.DEFAULT_METHOD_WHITELIST,  # pass a falsy value to retry on all methods
     respect_retry_after_header=True,
 ):
     # type: (...) -> requests.Session
@@ -109,7 +112,7 @@ def create_session(
             backoff_factor=backoff_factor,
             status_forcelist=retry_status_codes,
             respect_retry_after_header=respect_retry_after_header,
-            allowed_methods=retry_allowed_methods,
+            method_whitelist=retry_allowed_methods,
         ),
         timeout=timeout,
     )
