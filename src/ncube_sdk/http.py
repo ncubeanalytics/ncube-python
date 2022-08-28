@@ -84,9 +84,6 @@ class HTTPAdapterWithTimeout(requests.adapters.HTTPAdapter):
         )
 
 
-RETRY_ALLOWED_METHODS = frozenset(["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE"])
-
-
 def create_session(
     num_workers=1,
     num_hosts=1,

@@ -17,12 +17,14 @@ import json
 import logging
 import threading
 from collections import defaultdict
+from time import time
+
+from typing import Dict, Tuple
 
 try:
     from queue import Empty, SimpleQueue as Queue
 except ImportError:
     from Queue import Empty, Queue
-from time import time
 
 from .http import create_session, raise_if_err
 
@@ -46,15 +48,15 @@ def _get_main_thread():
 
 def _batch_worker_loop(
     q,
-    service_url,
-    service_auth,
+    ingest_service_url,
+    ingest_service_auth,
     batch_size,
     batch_interval_seconds,
     http_retries,
     http_retry_backoff,
     thread_running_event,
 ):
-    # type: (Queue, str, tuple[str, str], int, int, int, float, threading.Event) -> None
+    # type: (Queue, str, Tuple[str, str], int, int, int, float, threading.Event) -> None
     # the thread receives payloads and sends them over
     # how should it send over?
     # version 1.
@@ -80,7 +82,7 @@ def _batch_worker_loop(
             backoff_factor=http_retry_backoff,
             retry_allowed_methods=False,
         )
-        s.auth = service_auth
+        s.auth = ingest_service_auth
 
         flush_count = 0
         item_count = 0
@@ -115,7 +117,7 @@ def _batch_worker_loop(
                         schema_items[schema_id] += data + b"\n"
                     for schema_id, schema_data in schema_items.items():
                         r = s.post(
-                            service_url + "/" + schema_id,
+                            ingest_service_url + "/" + schema_id,
                             headers={"Content-Type": NDJSON_MEDIA_TYPE},
                             data=schema_data,
                         )
@@ -142,17 +144,17 @@ def _batch_worker_loop(
 class _Worker(object):
     def __init__(
         self,
-        service_url,
-        service_auth,
+        ingest_service_url,
+        ingest_service_auth,
         batch_size,
         batch_interval_seconds,
         max_restarts,
         http_retries,
         http_retry_backoff,
     ):
-        # type: (str, tuple[str, str], int, int, int, int, float) -> _Worker
-        self._service_url = service_url
-        self._service_auth = service_auth
+        # type: (str, Tuple[str, str], int, int, int, int, float) -> _Worker
+        self._service_url = ingest_service_url
+        self._service_auth = ingest_service_auth
         self._q = Queue()
         self._start_lock = threading.Lock()
         self._thread_running = threading.Event()
@@ -240,22 +242,51 @@ class _Worker(object):
 class Client:
     def __init__(
         self,
-        service_url,
+        ingest_service_url,
         schema_id,
-        service_auth,
+        ingest_service_auth,
         batch_size,
         batch_interval_seconds,
         raise_on_emit_failure,
+        validate_before_emit,
+        raise_on_validate_failure,
+        jsonschemas,
+        fetch_schemas,
+        schema_service_url,
+        schema_service_auth,
         max_background_worker_restarts,
         http_retries,
         http_retry_backoff,
     ):
-        # type: (str, str, tuple[str, str], int, int, bool, int, int, float) -> Client
+        # type: (str, str, Tuple[str, str], int, int, bool, bool, bool, Dict[str, Dict], bool, str, Tuple[str,str], int, int, float) -> Client
         self._schema_id = schema_id
         self._raise_on_emit_failure = raise_on_emit_failure
+        if validate_before_emit:
+            try:
+                import jsonschema
+            except ImportError:
+                import warnings
+
+                warnings.warn(
+                    "validate_before_emit cannot be set because jsonschema dependency is missing, "
+                    "install the package with option ncube_sdk[jsonschema] to enable"
+                )
+                validate_before_emit = False
+                self.validator = None
+            else:
+                from .validate import Validator
+
+                self.validator = Validator(
+                    raise_on_validate_failure=raise_on_validate_failure,
+                    jsonschemas=jsonschemas,
+                    fetch_schemas=fetch_schemas,
+                    schema_service_url=schema_service_url,
+                    schema_service_auth=schema_service_auth,
+                )
+        self._validate_before_emit = validate_before_emit
         self._worker = _Worker(
-            service_url,
-            service_auth,
+            ingest_service_url,
+            ingest_service_auth,
             batch_size,
             batch_interval_seconds,
             max_restarts=0 if raise_on_emit_failure else max_background_worker_restarts,
@@ -263,8 +294,15 @@ class Client:
             http_retry_backoff=http_retry_backoff,
         )
 
+    def _validate(self, payload, schema_id=None):
+        # type: (dict, str) -> None
+        schema_id = schema_id or self._schema_id
+        self.validator.validate(payload, schema_id)
+
     def emit(self, payload, schema_id=None):
         # type: (dict, str) -> bool
+        if self._validate_before_emit:
+            self._validate(payload, schema_id)
         return self.emitb(
             json.dumps(payload, allow_nan=False).encode("utf-8"), schema_id
         )
@@ -293,25 +331,37 @@ class Client:
 
 
 def init(
-    service_url,
+    ingest_service_url,
     schema_id,
-    service_auth=None,
+    ingest_service_auth=None,
     batch_size=100,
     batch_interval_seconds=5,
     raise_on_emit_failure=False,
+    validate_before_emit=False,
+    raise_on_validate_failure=True,
+    jsonschemas=None,
+    fetch_schemas=False,
+    schema_service_url=None,
+    schema_service_auth=None,
     max_background_worker_restarts=0,
     http_retries=10,
     http_retry_backoff=0.3,
 ):
-    # type: (str, str, tuple[str, str], int, int, bool, int, int, float) -> Client
+    # type: (str, str, Tuple[str, str], int, int, bool, bool, bool, Dict[str, Dict], bool, str, Tuple[str, str], int, int, float) -> Client
     return Client(
-        service_url,
-        schema_id,
-        service_auth,
-        batch_size,
-        batch_interval_seconds,
-        raise_on_emit_failure,
-        max_background_worker_restarts,
-        http_retries,
-        http_retry_backoff,
+        ingest_service_url=ingest_service_url,
+        schema_id=schema_id,
+        ingest_service_auth=ingest_service_auth,
+        batch_size=batch_size,
+        batch_interval_seconds=batch_interval_seconds,
+        raise_on_emit_failure=raise_on_emit_failure,
+        validate_before_emit=validate_before_emit,
+        raise_on_validate_failure=raise_on_validate_failure,
+        jsonschemas=jsonschemas,
+        fetch_schemas=fetch_schemas,
+        schema_service_url=schema_service_url,
+        schema_service_auth=schema_service_auth,
+        max_background_worker_restarts=max_background_worker_restarts,
+        http_retries=http_retries,
+        http_retry_backoff=http_retry_backoff,
     )
