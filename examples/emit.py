@@ -26,6 +26,7 @@ def main():
         os.environ.get("INGEST_SERVICE_AUTH_USER"),
         os.environ.get("INGEST_SERVICE_AUTH_PASS"),
     )
+    ingest_service_verify_ssl = "INGEST_SERVICE_DONT_VERIFY_SSL" not in os.environ
     if ingest_service_auth[0] is None:
         ingest_service_auth = None
     schema_id = os.environ["SCHEMA_ID"]
@@ -47,9 +48,11 @@ def main():
         raise_on_emit_failure=raise_on_emit_failure,
         validate_before_emit=validate_before_emit,
         raise_on_validate_failure=raise_on_validate_failure,
+        ingest_service_verify_ssl=ingest_service_verify_ssl,
         fetch_schemas=fetch_schemas,
         schema_service_url=schema_service_url,
         schema_service_auth=schema_service_auth,
+        schema_service_verify_ssl=ingest_service_verify_ssl,
         http_retries=5,
     )
 

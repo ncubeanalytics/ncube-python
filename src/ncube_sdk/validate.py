@@ -33,11 +33,9 @@ def _log_or_raise(raise_, err_template, *err_args):
 
 class Fetcher(object):
     def __init__(
-        self,
-        schema_service_url,
-        schema_service_auth,
+        self, schema_service_url, schema_service_auth, schema_service_verify_ssl
     ):
-        # type: (str, Tuple[str, str]) -> None
+        # type: (str, Tuple[str, str], Any) -> None
         self.schema_service_url = schema_service_url
         self.session = create_session(
             retry=3,
@@ -45,6 +43,7 @@ class Fetcher(object):
             retry_allowed_methods=False,
         )
         self.session.auth = schema_service_auth
+        self.session.verify = schema_service_verify_ssl
 
     def fetch_jsonschema(self, schema_id):
         # type: (str) -> Dict
@@ -72,8 +71,9 @@ class Validator(object):
         fetch_schemas,
         schema_service_url,
         schema_service_auth,
+        schema_service_verify_ssl,
     ):
-        # type: (bool, Dict[str, Dict], bool, str, Tuple[str, str]) -> None
+        # type: (bool, Dict[str, Dict], bool, str, Tuple[str, str], Any) -> None
         self.raise_on_validate_failure = raise_on_validate_failure
         if jsonschemas is None:
             jsonschemas = {}
@@ -82,7 +82,9 @@ class Validator(object):
         if fetch_schemas:
             if schema_service_url is None:
                 raise Exception("schema_service_url is missing")
-            self.fetcher = Fetcher(schema_service_url, schema_service_auth)
+            self.fetcher = Fetcher(
+                schema_service_url, schema_service_auth, schema_service_verify_ssl
+            )
 
     def validate(self, payload, schema_id):
         # type: (dict, str) -> None

@@ -54,13 +54,14 @@ def _batch_worker_loop(
     q,
     ingest_service_url,
     ingest_service_auth,
+    ingest_service_verify_ssl,
     batch_size,
     batch_interval_seconds,
     http_retries,
     http_retry_backoff,
     thread_running_event,
 ):
-    # type: (Queue, str, Tuple[str, str], int, int, int, float, threading.Event) -> None
+    # type: (Queue, str, Tuple[str, str], Any, int, int, int, float, threading.Event) -> None
     # the thread receives payloads and sends them over
     # how should it send over?
     # version 1.
@@ -87,6 +88,7 @@ def _batch_worker_loop(
             retry_allowed_methods=False,
         )
         s.auth = ingest_service_auth
+        s.verify = ingest_service_verify_ssl
 
         flush_count = 0
         item_count = 0
@@ -150,15 +152,17 @@ class _Worker(object):
         self,
         ingest_service_url,
         ingest_service_auth,
+        ingest_service_verify_ssl,
         batch_size,
         batch_interval_seconds,
         max_restarts,
         http_retries,
         http_retry_backoff,
     ):
-        # type: (str, Tuple[str, str], int, int, int, int, float) -> _Worker
+        # type: (str, Tuple[str, str], Any, int, int, int, int, float) -> None
         self._service_url = ingest_service_url
         self._service_auth = ingest_service_auth
+        self._service_verify_ssl = ingest_service_verify_ssl
         self._q = Queue()
         self._start_lock = threading.Lock()
         self._thread_running = threading.Event()
@@ -226,6 +230,7 @@ class _Worker(object):
                     self._q,
                     self._service_url,
                     self._service_auth,
+                    self._service_verify_ssl,
                     self._batch_size,
                     self._batch_interval_seconds,
                     self._http_retries,
@@ -255,14 +260,16 @@ class Client:
         validate_before_emit,
         raise_on_validate_failure,
         jsonschemas,
+        ingest_service_verify_ssl,
         fetch_schemas,
         schema_service_url,
         schema_service_auth,
+        schema_service_verify_ssl,
         max_background_worker_restarts,
         http_retries,
         http_retry_backoff,
     ):
-        # type: (str, str, Tuple[str, str], int, int, bool, bool, bool, Dict[str, Dict], bool, str, Tuple[str,str], int, int, float) -> Client
+        # type: (str, str, Tuple[str, str], int, int, bool, bool, bool, Dict[str, Dict], Any, bool, str, Tuple[str,str], Any, int, int, float) -> None
         self._schema_id = schema_id
         self._raise_on_emit_failure = raise_on_emit_failure
         if validate_before_emit:
@@ -286,11 +293,13 @@ class Client:
                     fetch_schemas=fetch_schemas,
                     schema_service_url=schema_service_url,
                     schema_service_auth=schema_service_auth,
+                    schema_service_verify_ssl=schema_service_verify_ssl,
                 )
         self._validate_before_emit = validate_before_emit
         self._worker = _Worker(
             ingest_service_url,
             ingest_service_auth,
+            ingest_service_verify_ssl,
             batch_size,
             batch_interval_seconds,
             max_restarts=0 if raise_on_emit_failure else max_background_worker_restarts,
@@ -344,14 +353,16 @@ def init(
     validate_before_emit=False,
     raise_on_validate_failure=True,
     jsonschemas=None,
+    ingest_service_verify_ssl=True,
     fetch_schemas=False,
     schema_service_url=None,
     schema_service_auth=None,
+    schema_service_verify_ssl=True,
     max_background_worker_restarts=0,
     http_retries=10,
     http_retry_backoff=0.3,
 ):
-    # type: (str, str, Tuple[str, str], int, int, bool, bool, bool, Dict[str, Dict], bool, str, Tuple[str, str], int, int, float) -> Client
+    # type: (str, str, Tuple[str, str], int, int, bool, bool, bool, Dict[str, Dict], Any, bool, str, Tuple[str, str], Any, int, int, float) -> Client
     return Client(
         ingest_service_url=ingest_service_url,
         schema_id=schema_id,
@@ -362,9 +373,11 @@ def init(
         validate_before_emit=validate_before_emit,
         raise_on_validate_failure=raise_on_validate_failure,
         jsonschemas=jsonschemas,
+        ingest_service_verify_ssl=ingest_service_verify_ssl,
         fetch_schemas=fetch_schemas,
         schema_service_url=schema_service_url,
         schema_service_auth=schema_service_auth,
+        schema_service_verify_ssl=schema_service_verify_ssl,
         max_background_worker_restarts=max_background_worker_restarts,
         http_retries=http_retries,
         http_retry_backoff=http_retry_backoff,
