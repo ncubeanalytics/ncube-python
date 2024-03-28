@@ -14,9 +14,9 @@
 from __future__ import absolute_import, unicode_literals
 
 import logging
+from typing import Any, Dict, Text, Tuple
 
 from jsonschema import validate
-from typing import Any, Dict, Text, Tuple
 
 from .http import create_session, raise_if_err
 

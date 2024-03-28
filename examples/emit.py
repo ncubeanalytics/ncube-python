@@ -61,7 +61,7 @@ def main():
     cnt = 0
     while True:
         cnt += 1
-        client.emit({"num_field": "2"})
+        client.emit({"num_field": str(cnt)})
         print(cnt)
         time.sleep(1)
 

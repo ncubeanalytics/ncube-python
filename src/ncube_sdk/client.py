@@ -175,6 +175,7 @@ class _Worker(object):
         self._send_work_done_on_exit()
 
     def _send_work_done_on_exit(self):
+        # using recipe for thread graceful exit from https://stackoverflow.com/a/63075281/2440380
         main_thread = _get_main_thread()
 
         def send_work_done():
@@ -336,10 +337,7 @@ class Client:
             if self._raise_on_emit_failure:
                 raise Exception(err_msg)
             else:
-                _logger.error(
-                    "Cannot emit, the background worker thread is in a disfunctional state. Please check "
-                    "previous error logs."
-                )
+                _logger.error(err_msg)
         return sent
 
 
