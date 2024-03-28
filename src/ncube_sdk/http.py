@@ -17,11 +17,19 @@ import logging
 
 import requests
 import requests.adapters
+from urllib3 import __version__ as urllib3_version
 from urllib3.util.retry import Retry
 
 __all__ = ["raise_if_err", "create_session"]
 
 _logger = logging.getLogger(__name__)
+
+# https://github.com/urllib3/urllib3/blob/main/CHANGES.rst#1260-2020-11-10
+DEFAULT_ALLOWED_METHODS = (
+    Retry.DEFAULT_METHOD_WHITELIST
+    if urllib3_version < "2.0"
+    else Retry.DEFAULT_ALLOWED_METHODS
+)
 
 
 def raise_if_err(r):
@@ -91,11 +99,19 @@ def create_session(
     backoff_factor=0.2,
     timeout=5 * 60,
     retry_status_codes=(413, 429, 500, 502, 503, 504),
-    retry_allowed_methods=Retry.DEFAULT_METHOD_WHITELIST,  # pass a falsy value to retry on all methods
+    retry_allowed_methods=DEFAULT_ALLOWED_METHODS,  # pass a falsy value to retry on all methods
     respect_retry_after_header=True,
 ):
     # type: (...) -> requests.Session
     session = requests.Session()
+
+    # https://github.com/urllib3/urllib3/blob/main/CHANGES.rst#1260-2020-11-10
+    retry_kwargs = (
+        dict(method_whitelist=retry_allowed_methods)
+        if urllib3_version < "2.0"
+        else dict(allowed_methods=retry_allowed_methods)
+    )
+
     adapter = HTTPAdapterWithTimeout(
         # number of different hosts we will be talking to
         pool_connections=num_hosts,
@@ -109,7 +125,7 @@ def create_session(
             backoff_factor=backoff_factor,
             status_forcelist=retry_status_codes,
             respect_retry_after_header=respect_retry_after_header,
-            method_whitelist=retry_allowed_methods,
+            **retry_kwargs
         ),
         timeout=timeout,
     )

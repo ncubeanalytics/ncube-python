@@ -18,11 +18,15 @@ import logging
 import threading
 from collections import defaultdict
 from time import time
-
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 try:
-    from queue import Empty, SimpleQueue as Queue
+    from queue import Empty
+
+    try:
+        from queue import SimpleQueue as Queue
+    except ImportError:
+        from queue import Queue
 except ImportError:
     from Queue import Empty, Queue
 
