@@ -1,4 +1,4 @@
-#  Copyright (c) 2022 N Cube Single Member Private Company
+#  Copyright (c) 2024 N Cube Single Member Private Company
 #
 #  Licensed under the Apache License, Version 2.0 (the "License");
 #  you may not use this file except in compliance with the License.
@@ -13,4 +13,4 @@
 #  limitations under the License.
 from __future__ import unicode_literals
 
-__version__ = "0.3"
+__version__ = "0.4"
