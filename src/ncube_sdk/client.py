@@ -30,6 +30,7 @@ try:
 except ImportError:
     from Queue import Empty, Queue
 
+from . import __version__
 from .http import create_session, raise_if_err
 
 __all__ = ["init", "Client"]
@@ -87,6 +88,7 @@ def _batch_worker_loop(
             backoff_factor=http_retry_backoff,
             retry_allowed_methods=False,
         )
+        s.headers.update({"User-Agent": "ncube-python-sdk/{}".format(__version__)})
         s.auth = ingest_service_auth
         s.verify = ingest_service_verify_ssl
 

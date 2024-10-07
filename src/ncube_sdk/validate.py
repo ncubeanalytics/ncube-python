@@ -18,6 +18,7 @@ from typing import Any, Dict, Text, Tuple
 
 from jsonschema import validate
 
+from . import __version__
 from .http import create_session, raise_if_err
 
 _logger = logging.getLogger(__name__)
@@ -41,6 +42,9 @@ class Fetcher(object):
             retry=3,
             timeout=10,
             retry_allowed_methods=False,
+        )
+        self.session.headers.update(
+            {"User-Agent": "ncube-python-sdk/{}".format(__version__)}
         )
         self.session.auth = schema_service_auth
         self.session.verify = schema_service_verify_ssl
