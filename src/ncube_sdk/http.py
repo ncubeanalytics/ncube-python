@@ -14,6 +14,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import logging
+import sys
 
 import requests
 import requests.adapters
@@ -23,6 +24,11 @@ from urllib3.util.retry import Retry
 __all__ = ["raise_if_err", "create_session"]
 
 _logger = logging.getLogger(__name__)
+
+try:
+    maxint = sys.maxint
+except AttributeError:
+    maxint = sys.maxsize
 
 # https://github.com/urllib3/urllib3/blob/main/CHANGES.rst#1260-2020-11-10
 DEFAULT_ALLOWED_METHODS = (
@@ -111,6 +117,9 @@ def create_session(
         if urllib3_version < "2.0"
         else dict(allowed_methods=retry_allowed_methods)
     )
+
+    if retry == -1:
+        retry = maxint  # not really forever, but urllib3.Retry doesn't make this easy
 
     adapter = HTTPAdapterWithTimeout(
         # number of different hosts we will be talking to
