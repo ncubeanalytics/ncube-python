@@ -294,9 +294,13 @@ class Client:
                     raise_on_validate_failure=raise_on_validate_failure,
                     jsonschemas=jsonschemas,
                     fetch_schemas=fetch_schemas,
-                    schema_service_url=schema_service_url,
-                    schema_service_auth=schema_service_auth,
-                    schema_service_verify_ssl=schema_service_verify_ssl,
+                    schema_service_url=schema_service_url or ingest_service_url,
+                    schema_service_auth=schema_service_auth or ingest_service_auth,
+                    schema_service_verify_ssl=(
+                        schema_service_verify_ssl
+                        if schema_service_verify_ssl is not None
+                        else ingest_service_verify_ssl
+                    ),
                 )
         self._validate_before_emit = validate_before_emit
         self._worker = _Worker(
@@ -357,7 +361,7 @@ def init(
     fetch_schemas=False,
     schema_service_url=None,
     schema_service_auth=None,
-    schema_service_verify_ssl=True,
+    schema_service_verify_ssl=None,
     max_background_worker_restarts=0,
     http_retries=10,
     http_retry_backoff=0.3,

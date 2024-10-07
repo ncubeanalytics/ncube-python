@@ -31,13 +31,7 @@ def main():
         ingest_service_auth = None
     schema_id = os.environ["SCHEMA_ID"]
     schema_service_url = os.environ.get("SCHEMA_SERVICE_URL")
-    validate_before_emit = fetch_schemas = bool(schema_service_url)
-    schema_service_auth = (
-        os.environ.get("SCHEMA_SERVICE_AUTH_USER"),
-        os.environ.get("SCHEMA_SERVICE_AUTH_PASS"),
-    )
-    if schema_service_auth[0] is None:
-        schema_service_auth = None
+    validate_before_emit = fetch_schemas = "VALIDATE_BEFORE_EMIT" in os.environ
     raise_on_emit_failure = "RAISE_ON_EMIT_FAILURE" in os.environ
     raise_on_validate_failure = "RAISE_ON_VALIDATE_FAILURE" in os.environ
 
@@ -51,8 +45,6 @@ def main():
         ingest_service_verify_ssl=ingest_service_verify_ssl,
         fetch_schemas=fetch_schemas,
         schema_service_url=schema_service_url,
-        schema_service_auth=schema_service_auth,
-        schema_service_verify_ssl=ingest_service_verify_ssl,
         http_retries=5,
     )
 
