@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.5.0 - 2024-10-07
+
+### Added
+
+* Set User-Agent http headers
+* Support `http_retries=-1` for maxint retries
+
+### Changed
+
+* The `ingest_service_url` should no longer include the `/ingest` endpoint
+
 ## 0.4.0 - 2024-03-28
 
 ### Added
