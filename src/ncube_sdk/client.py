@@ -123,7 +123,7 @@ def _batch_worker_loop(
                         schema_items[schema_id] += data + b"\n"
                     for schema_id, schema_data in schema_items.items():
                         r = s.post(
-                            ingest_service_url + "/" + schema_id,
+                            ingest_service_url + "/ingest/" + schema_id,
                             headers={"Content-Type": NDJSON_MEDIA_TYPE},
                             data=schema_data,
                         )
