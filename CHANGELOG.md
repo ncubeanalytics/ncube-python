@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.0 - 2024-10-17
+
+### Changed
+
+* Make the `schema_id` argument not mandatory in client init
+
 ## 0.6.0 - 2024-10-07
 
 ### Added
