@@ -317,6 +317,11 @@ class Client:
     def _validate(self, payload, schema_id=None):
         # type: (dict, str) -> None
         schema_id = schema_id or self._schema_id
+        schema_id = schema_id or self._schema_id
+        if schema_id is None:
+            raise Exception(
+                "You need to either pass a schema_id or initialize the client with one"
+            )
         self.validator.validate(payload, schema_id)
 
     def emit(self, payload, schema_id=None):
@@ -349,7 +354,7 @@ class Client:
 
 def init(
     ingest_service_url,
-    schema_id,
+    schema_id=None,
     ingest_service_auth=None,
     batch_size=100,
     batch_interval_seconds=5,

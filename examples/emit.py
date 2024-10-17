@@ -37,7 +37,6 @@ def main():
 
     client = ncube_sdk.client.init(
         ingest_service_url=ingest_service_url,
-        schema_id=schema_id,
         ingest_service_auth=ingest_service_auth,
         raise_on_emit_failure=raise_on_emit_failure,
         validate_before_emit=validate_before_emit,
@@ -53,7 +52,7 @@ def main():
     cnt = 0
     while True:
         cnt += 1
-        client.emit({"num_field": str(cnt)})
+        client.emit({"num_field": str(cnt)}, schema_id=schema_id)
         print(cnt)
         time.sleep(1)
 
