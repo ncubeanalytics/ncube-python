@@ -18,7 +18,7 @@ import logging
 import threading
 from collections import defaultdict
 from time import time
-from typing import Any, Dict, Tuple
+from typing import Any, Callable, Dict, Optional, Tuple
 
 try:
     from queue import Empty
@@ -251,6 +251,11 @@ class _Worker(object):
             return True
 
 
+def _default_serialize(payload):
+    # type: (Any) -> bytes
+    return json.dumps(payload, allow_nan=False).encode("utf-8")
+
+
 class Client:
     def __init__(
         self,
@@ -314,26 +319,19 @@ class Client:
             http_retry_backoff=http_retry_backoff,
         )
 
-    def _validate(self, payload, schema_id=None):
-        # type: (dict, str) -> None
-        schema_id = schema_id or self._schema_id
+    def emit(self, payload, schema_id=None, serialize=_default_serialize):
+        # type: (Any, Optional[str], Callable[[Any], bytes]) -> bool
         schema_id = schema_id or self._schema_id
         if schema_id is None:
             raise Exception(
                 "You need to either pass a schema_id or initialize the client with one"
             )
-        self.validator.validate(payload, schema_id)
-
-    def emit(self, payload, schema_id=None):
-        # type: (dict, str) -> bool
         if self._validate_before_emit:
-            self._validate(payload, schema_id)
-        return self.emitb(
-            json.dumps(payload, allow_nan=False).encode("utf-8"), schema_id
-        )
+            self.validator.validate(payload, schema_id)
+        return self.emitb(serialize(payload), schema_id)
 
     def emitb(self, payload, schema_id=None):
-        # type: (bytes, str) -> bool
+        # type: (bytes, Optional[str]) -> bool
         schema_id = schema_id or self._schema_id
         if schema_id is None:
             raise Exception(

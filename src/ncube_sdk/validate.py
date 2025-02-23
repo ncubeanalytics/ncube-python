@@ -91,7 +91,7 @@ class Validator(object):
             )
 
     def validate(self, payload, schema_id):
-        # type: (dict, str) -> None
+        # type: (Any, str) -> None
         if schema_id not in self.jsonschemas:
             if self.fetch_schemas:
                 try:
